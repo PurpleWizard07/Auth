@@ -1,24 +1,27 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, Cookie, status
-from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.auth.schemas import (
-    LoginRequest,
-    LoginResponse,
-    RegisterRequest,
-    RegisterResponse,
     ForgotPasswordRequest,
     ForgotPasswordResponse,
+    LoginRequest,
+    LoginResponse,
+    MeResponse,
+    RefreshResponse,
+    RegisterRequest,
+    RegisterResponse,
     ResetPasswordRequest,
     ResetPasswordResponse,
-    MeResponse,
     LogoutResponse,
-    RefreshResponse,
-    ErrorResponse,
 )
 from app.auth.service import AuthService
-from app.dependencies import get_auth_service, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+bearer_scheme = HTTPBearer(auto_error=False)
+
+
+def get_auth_service() -> AuthService:
+    return AuthService()
 
 
 @router.post(
@@ -49,6 +52,20 @@ async def login(
 
 
 @router.post(
+    "/refresh",
+    response_model=RefreshResponse,
+    status_code=status.HTTP_200_OK,
+    operation_id="refresh",
+)
+async def refresh(
+    request: Request,
+    response: Response,
+    service: AuthService = Depends(get_auth_service),
+) -> RefreshResponse:
+    return await service.refresh(request, response)
+
+
+@router.post(
     "/forgot-password",
     response_model=ForgotPasswordResponse,
     status_code=status.HTTP_202_ACCEPTED,
@@ -58,7 +75,7 @@ async def forgotPassword(
     body: ForgotPasswordRequest,
     service: AuthService = Depends(get_auth_service),
 ) -> ForgotPasswordResponse:
-    return await service.forgot_password(body)
+    return await service.forgotPassword(body)
 
 
 @router.post(
@@ -71,7 +88,7 @@ async def resetPassword(
     body: ResetPasswordRequest,
     service: AuthService = Depends(get_auth_service),
 ) -> ResetPasswordResponse:
-    return await service.reset_password(body)
+    return await service.resetPassword(body)
 
 
 @router.get(
@@ -81,16 +98,15 @@ async def resetPassword(
     operation_id="me",
 )
 async def me(
-    current_user=Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    service: AuthService = Depends(get_auth_service),
 ) -> MeResponse:
-    return MeResponse(
-        id=current_user.id,
-        full_name=current_user.full_name,
-        email=current_user.email,
-        is_active=current_user.is_active,
-        created_at=current_user.created_at,
-        updated_at=current_user.updated_at,
-    )
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
+    return await service.me(credentials.credentials)
 
 
 @router.post(
@@ -100,27 +116,10 @@ async def me(
     operation_id="logout",
 )
 async def logout(
+    request: Request,
     response: Response,
-    refresh_token: Optional[str] = Cookie(default=None),
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     service: AuthService = Depends(get_auth_service),
-    current_user=Depends(get_current_user),
 ) -> LogoutResponse:
-    return await service.logout(
-        user_id=current_user.id,
-        refresh_token=refresh_token,
-        response=response,
-    )
-
-
-@router.post(
-    "/refresh",
-    response_model=RefreshResponse,
-    status_code=status.HTTP_200_OK,
-    operation_id="refresh",
-)
-async def refresh(
-    response: Response,
-    refresh_token: Optional[str] = Cookie(default=None),
-    service: AuthService = Depends(get_auth_service),
-) -> RefreshResponse:
-    return await service.refresh(refresh_token=refresh_token, response=response)
+    token = credentials.credentials if credentials else None
+    return await service.logout(request, response, token)

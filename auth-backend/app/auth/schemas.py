@@ -1,4 +1,5 @@
-from datetime import datetime
+from __future__ import annotations
+
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field
@@ -10,19 +11,18 @@ from pydantic import BaseModel, EmailStr, Field
 
 
 class RegisterRequest(BaseModel):
-    full_name: str = Field(..., min_length=1, max_length=255)
+    full_name: str = Field(..., alias="fullName")
     email: EmailStr
-    password: str = Field(..., min_length=8)
-    confirm_password: str = Field(..., min_length=8)
+    password: str
+    confirm_password: str = Field(..., alias="confirmPassword")
+
+    model_config = {"populate_by_name": True}
 
 
 class RegisterResponse(BaseModel):
     id: str
-    full_name: str
+    fullName: str
     email: str
-    is_active: bool
-    created_at: datetime
-    updated_at: datetime
 
 
 # ---------------------------------------------------------------------------
@@ -33,16 +33,30 @@ class RegisterResponse(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
-    remember_me: Optional[bool] = False
+    remember_me: Optional[bool] = Field(False, alias="rememberMe")
+
+    model_config = {"populate_by_name": True}
 
 
 class LoginResponse(BaseModel):
-    access_token: str
-    token_type: str
+    accessToken: str
+    tokenType: str
+    expiresIn: int
 
 
 # ---------------------------------------------------------------------------
-# Forgot password
+# Refresh
+# ---------------------------------------------------------------------------
+
+
+class RefreshResponse(BaseModel):
+    accessToken: str
+    tokenType: str
+    expiresIn: int
+
+
+# ---------------------------------------------------------------------------
+# Forgot Password
 # ---------------------------------------------------------------------------
 
 
@@ -55,14 +69,16 @@ class ForgotPasswordResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Reset password
+# Reset Password
 # ---------------------------------------------------------------------------
 
 
 class ResetPasswordRequest(BaseModel):
     token: str
-    password: str = Field(..., min_length=8)
-    confirm_password: str = Field(..., min_length=8)
+    password: str
+    confirm_password: str = Field(..., alias="confirmPassword")
+
+    model_config = {"populate_by_name": True}
 
 
 class ResetPasswordResponse(BaseModel):
@@ -76,11 +92,8 @@ class ResetPasswordResponse(BaseModel):
 
 class MeResponse(BaseModel):
     id: str
-    full_name: str
+    fullName: str
     email: str
-    is_active: bool
-    created_at: datetime
-    updated_at: datetime
 
 
 # ---------------------------------------------------------------------------
@@ -93,16 +106,6 @@ class LogoutResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Refresh
-# ---------------------------------------------------------------------------
-
-
-class RefreshResponse(BaseModel):
-    access_token: str
-    token_type: str
-
-
-# ---------------------------------------------------------------------------
 # Error envelope
 # ---------------------------------------------------------------------------
 
@@ -110,7 +113,7 @@ class RefreshResponse(BaseModel):
 class ErrorDetail(BaseModel):
     code: str
     message: str
-    details: Optional[dict] = None
+    details: Optional[object] = None
 
 
 class ErrorResponse(BaseModel):
