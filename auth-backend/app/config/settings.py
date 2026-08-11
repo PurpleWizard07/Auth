@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import AnyUrl, EmailStr, field_validator, model_validator
+from pydantic import EmailStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -118,7 +118,8 @@ class Settings(BaseSettings):
     def refresh_token_ttl_positive(cls, v: int) -> int:
         if v <= 0:
             raise ValueError(
-                "REFRESH_TOKEN_TTL_DAYS and REFRESH_TOKEN_TTL_DAYS_REMEMBER_ME must be positive integers"
+                "REFRESH_TOKEN_TTL_DAYS and REFRESH_TOKEN_TTL_DAYS_REMEMBER_ME"
+                " must be positive integers"
             )
         return v
 

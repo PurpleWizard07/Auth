@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Optional
 
 
 # ---------------------------------------------------------------------------
@@ -12,6 +11,11 @@ PASSWORD_MIN_LENGTH = 8
 _UPPER_RE = re.compile(r"[A-Z]")
 _LOWER_RE = re.compile(r"[a-z]")
 _DIGIT_RE = re.compile(r"[0-9]")
+_EMAIL_RE = re.compile(
+    r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+"
+    r"@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?"
+    r"(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -68,7 +72,7 @@ def validate_password_policy(password: str) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-def validate_full_name(full_name: Optional[str]) -> Optional[str]:
+def validate_full_name(full_name: str | None) -> str | None:
     """Validate the full_name field."""
     if not full_name or not full_name.strip():
         return "Full name is required."
@@ -79,22 +83,16 @@ def validate_full_name(full_name: Optional[str]) -> Optional[str]:
     return None
 
 
-def validate_email(email: Optional[str]) -> Optional[str]:
+def validate_email(email: str | None) -> str | None:
     """Validate the email field."""
     if not email or not email.strip():
         return "Email is required."
-    # Basic RFC-5322-like pattern; the server is authoritative.
-    pattern = re.compile(
-        r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+"
-        r"@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?"
-        r"(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
-    )
-    if not pattern.match(email.strip()):
+    if not _EMAIL_RE.match(email.strip()):
         return "Please enter a valid email address."
     return None
 
 
-def validate_password(password: Optional[str]) -> Optional[str]:
+def validate_password(password: str | None) -> str | None:
     """Return the *first* policy violation message, or None when valid."""
     if not password:
         return "Password is required."
@@ -103,8 +101,8 @@ def validate_password(password: Optional[str]) -> Optional[str]:
 
 
 def validate_confirm_password(
-    password: Optional[str], confirm_password: Optional[str]
-) -> Optional[str]:
+    password: str | None, confirm_password: str | None
+) -> str | None:
     """Validate that confirm_password matches password."""
     if not confirm_password:
         return "Please confirm your password."
@@ -122,10 +120,10 @@ def validate_confirm_password(
 
 def validate_register_fields(
     *,
-    full_name: Optional[str],
-    email: Optional[str],
-    password: Optional[str],
-    confirm_password: Optional[str],
+    full_name: str | None,
+    email: str | None,
+    password: str | None,
+    confirm_password: str | None,
 ) -> dict[str, list[str]]:
     """Run all registration field validators and collect errors."""
     field_errors: dict[str, list[str]] = {}
@@ -159,8 +157,8 @@ def validate_register_fields(
 
 def validate_login_fields(
     *,
-    email: Optional[str],
-    password: Optional[str],
+    email: str | None,
+    password: str | None,
 ) -> dict[str, list[str]]:
     """Run field-presence validators for login (policy not checked here)."""
     field_errors: dict[str, list[str]] = {}
@@ -182,8 +180,8 @@ def validate_login_fields(
 
 def validate_reset_password_fields(
     *,
-    password: Optional[str],
-    confirm_password: Optional[str],
+    password: str | None,
+    confirm_password: str | None,
 ) -> dict[str, list[str]]:
     """Run validators for the reset-password form."""
     field_errors: dict[str, list[str]] = {}

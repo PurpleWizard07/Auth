@@ -1,21 +1,21 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastapi.responses import JSONResponse
 
-from app.common.errors import AppException, ErrorCode
+from app.common.errors import AppError, ErrorCode
 
 
 def error_response(
     code: ErrorCode,
     message: str,
     status_code: int = 400,
-    details: Optional[Dict[str, Any]] = None,
+    details: dict[str, Any] | None = None,
 ) -> JSONResponse:
     """Return a JSON response conforming to the ErrorResponse envelope.
 
     Shape: { error: { code, message, details } }
     """
-    body: Dict[str, Any] = {
+    body: dict[str, Any] = {
         "error": {
             "code": code.value,
             "message": message,
@@ -25,8 +25,8 @@ def error_response(
     return JSONResponse(status_code=status_code, content=body)
 
 
-def error_response_from_exception(exc: AppException) -> JSONResponse:
-    """Build an ErrorResponse envelope directly from an AppException instance."""
+def error_response_from_exception(exc: AppError) -> JSONResponse:
+    """Build an ErrorResponse envelope directly from an AppError instance."""
     return error_response(
         code=exc.code,
         message=exc.message,

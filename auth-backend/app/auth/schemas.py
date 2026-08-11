@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -21,8 +19,10 @@ class RegisterRequest(BaseModel):
 
 class RegisterResponse(BaseModel):
     id: str
-    fullName: str
+    full_name: str = Field(alias="fullName")
     email: str
+
+    model_config = {"populate_by_name": True}
 
 
 # ---------------------------------------------------------------------------
@@ -33,15 +33,17 @@ class RegisterResponse(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
-    remember_me: Optional[bool] = Field(False, alias="rememberMe")
+    remember_me: bool | None = Field(False, alias="rememberMe")
 
     model_config = {"populate_by_name": True}
 
 
 class LoginResponse(BaseModel):
-    accessToken: str
-    tokenType: str
-    expiresIn: int
+    access_token: str = Field(alias="accessToken")
+    token_type: str = Field(alias="tokenType")
+    expires_in: int = Field(alias="expiresIn")
+
+    model_config = {"populate_by_name": True}
 
 
 # ---------------------------------------------------------------------------
@@ -50,9 +52,11 @@ class LoginResponse(BaseModel):
 
 
 class RefreshResponse(BaseModel):
-    accessToken: str
-    tokenType: str
-    expiresIn: int
+    access_token: str = Field(alias="accessToken")
+    token_type: str = Field(alias="tokenType")
+    expires_in: int = Field(alias="expiresIn")
+
+    model_config = {"populate_by_name": True}
 
 
 # ---------------------------------------------------------------------------
@@ -92,8 +96,10 @@ class ResetPasswordResponse(BaseModel):
 
 class MeResponse(BaseModel):
     id: str
-    fullName: str
+    full_name: str = Field(alias="fullName")
     email: str
+
+    model_config = {"populate_by_name": True}
 
 
 # ---------------------------------------------------------------------------
@@ -113,7 +119,7 @@ class LogoutResponse(BaseModel):
 class ErrorDetail(BaseModel):
     code: str
     message: str
-    details: Optional[object] = None
+    details: object | None = None
 
 
 class ErrorResponse(BaseModel):

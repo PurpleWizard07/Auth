@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
-
-from app.models.password_reset import PasswordReset
 
 
 # ---------------------------------------------------------------------------
@@ -16,7 +13,7 @@ from app.models.password_reset import PasswordReset
 
 async def get_user_by_id(
     conn: AsyncConnection, user_id: int
-) -> Optional[dict]:
+) -> dict | None:
     result = await conn.execute(
         text("SELECT * FROM users WHERE id = :id"),
         {"id": user_id},
@@ -27,7 +24,7 @@ async def get_user_by_id(
 
 async def get_user_by_email(
     conn: AsyncConnection, email: str
-) -> Optional[dict]:
+) -> dict | None:
     result = await conn.execute(
         text("SELECT * FROM users WHERE email = :email"),
         {"email": email},
@@ -58,7 +55,8 @@ async def create_user(
         },
     )
     row = result.mappings().first()
-    assert row is not None
+    if row is None:
+        raise RuntimeError("INSERT INTO users returned no row")
     return dict(row)
 
 
@@ -105,13 +103,14 @@ async def create_password_reset(
         },
     )
     row = result.mappings().first()
-    assert row is not None
+    if row is None:
+        raise RuntimeError("INSERT INTO password_resets returned no row")
     return dict(row)
 
 
 async def get_password_reset_by_token_hash(
     conn: AsyncConnection, token_hash: str
-) -> Optional[dict]:
+) -> dict | None:
     result = await conn.execute(
         text(
             """
@@ -186,13 +185,14 @@ async def create_refresh_token(
         },
     )
     row = result.mappings().first()
-    assert row is not None
+    if row is None:
+        raise RuntimeError("INSERT INTO refresh_tokens returned no row")
     return dict(row)
 
 
 async def get_refresh_token_by_token_hash(
     conn: AsyncConnection, token_hash: str
-) -> Optional[dict]:
+) -> dict | None:
     result = await conn.execute(
         text(
             """

@@ -4,7 +4,6 @@ import hashlib
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 import bcrypt
 from fastapi import HTTPException, Request, Response, status
@@ -30,9 +29,13 @@ from app.auth.schemas import (
 
 SECRET_KEY: str = os.environ.get("JWT_SECRET_KEY", "change-me-in-production")
 ALGORITHM: str = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
+ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
+    os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "15")
+)
 REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.environ.get("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
-REFRESH_TOKEN_REMEMBER_DAYS: int = int(os.environ.get("REFRESH_TOKEN_REMEMBER_DAYS", "30"))
+REFRESH_TOKEN_REMEMBER_DAYS: int = int(
+    os.environ.get("REFRESH_TOKEN_REMEMBER_DAYS", "30")
+)
 BCRYPT_ROUNDS: int = int(os.environ.get("BCRYPT_ROUNDS", "12"))
 REFRESH_COOKIE_NAME: str = "refresh_token"
 
@@ -75,7 +78,7 @@ def _create_access_token(user_id: str, email: str) -> str:
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def _validate_password_policy(password: str) -> Optional[str]:
+def _validate_password_policy(password: str) -> str | None:
     """Return an error message if the password violates policy, else None."""
     if len(password) < 8:
         return "Password must be at least 8 characters."
@@ -115,7 +118,7 @@ def _clear_refresh_cookie(response: Response) -> None:
     )
 
 
-def _get_refresh_token_from_request(request: Request) -> Optional[str]:
+def _get_refresh_token_from_request(request: Request) -> str | None:
     return request.cookies.get(REFRESH_COOKIE_NAME)
 
 
@@ -204,7 +207,9 @@ class AuthService:
         raw_refresh = secrets.token_urlsafe(48)
         token_hash = _sha256(raw_refresh)
         remember = body.remember_me or False
-        expires_days = REFRESH_TOKEN_REMEMBER_DAYS if remember else REFRESH_TOKEN_EXPIRE_DAYS
+        expires_days = (
+            REFRESH_TOKEN_REMEMBER_DAYS if remember else REFRESH_TOKEN_EXPIRE_DAYS
+        )
         expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
 
         _refresh_tokens[token_hash] = {
@@ -271,7 +276,9 @@ class AuthService:
         new_raw_refresh = secrets.token_urlsafe(48)
         new_hash = _sha256(new_raw_refresh)
         remember = stored["remember_me"]
-        expires_days = REFRESH_TOKEN_REMEMBER_DAYS if remember else REFRESH_TOKEN_EXPIRE_DAYS
+        expires_days = (
+            REFRESH_TOKEN_REMEMBER_DAYS if remember else REFRESH_TOKEN_EXPIRE_DAYS
+        )
         expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
 
         _refresh_tokens[new_hash] = {
@@ -298,7 +305,9 @@ class AuthService:
     # forgotPassword
     # ------------------------------------------------------------------
 
-    async def forgotPassword(self, body: ForgotPasswordRequest) -> ForgotPasswordResponse:
+    async def forgotPassword(
+        self, body: ForgotPasswordRequest
+    ) -> ForgotPasswordResponse:
         # Enumeration resistance: always return the same message
         user = _users.get(body.email)
         if user and user["is_active"]:
@@ -316,14 +325,19 @@ class AuthService:
             # In production: send email with raw_token
 
         return ForgotPasswordResponse(
-            message="If an account with that email exists, a password reset link has been sent."
+            message=(
+                "If an account with that email exists, "
+                "a password reset link has been sent."
+            )
         )
 
     # ------------------------------------------------------------------
     # resetPassword
     # ------------------------------------------------------------------
 
-    async def resetPassword(self, body: ResetPasswordRequest) -> ResetPasswordResponse:
+    async def resetPassword(
+        self, body: ResetPasswordRequest
+    ) -> ResetPasswordResponse:
         token_hash = _sha256(body.token)
         stored = _password_resets.get(token_hash)
 
@@ -380,7 +394,9 @@ class AuthService:
             if rt["user_id"] == user["id"] and rt["revoked_at"] is None:
                 rt["revoked_at"] = datetime.now(timezone.utc)
 
-        return ResetPasswordResponse(message="Your password has been reset successfully.")
+        return ResetPasswordResponse(
+            message="Your password has been reset successfully."
+        )
 
     # ------------------------------------------------------------------
     # me
@@ -400,7 +416,7 @@ class AuthService:
         except JWTError:
             raise unauth_exc
 
-        email: Optional[str] = payload.get("email")
+        email: str | None = payload.get("email")
         if email is None:
             raise unauth_exc
 
@@ -422,7 +438,7 @@ class AuthService:
         self,
         request: Request,
         response: Response,
-        token: Optional[str],
+        token: str | None,
     ) -> LogoutResponse:
         raw_refresh = _get_refresh_token_from_request(request)
         if raw_refresh:

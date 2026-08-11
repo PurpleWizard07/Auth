@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class ErrorCode(str, Enum):
@@ -12,13 +12,13 @@ class ErrorCode(str, Enum):
     INTERNAL_ERROR = "INTERNAL_ERROR"
 
 
-class AppException(Exception):
+class AppError(Exception):
     def __init__(
         self,
         code: ErrorCode,
         message: str,
         status_code: int = 400,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         self.code = code
         self.message = message
@@ -27,11 +27,15 @@ class AppException(Exception):
         super().__init__(message)
 
 
-class ValidationError(AppException):
+# Keep backward-compatible alias
+AppException = AppError
+
+
+class ValidationError(AppError):
     def __init__(
         self,
         message: str,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             code=ErrorCode.VALIDATION_ERROR,
@@ -41,7 +45,7 @@ class ValidationError(AppException):
         )
 
 
-class InvalidCredentialsError(AppException):
+class InvalidCredentialsError(AppError):
     def __init__(
         self,
         message: str = "Invalid email or password.",
@@ -53,7 +57,7 @@ class InvalidCredentialsError(AppException):
         )
 
 
-class EmailTakenError(AppException):
+class EmailTakenError(AppError):
     def __init__(
         self,
         message: str = "An account with this email already exists.",
@@ -65,7 +69,7 @@ class EmailTakenError(AppException):
         )
 
 
-class InvalidTokenError(AppException):
+class InvalidTokenError(AppError):
     def __init__(
         self,
         message: str = "This link is invalid or has expired.",
@@ -77,7 +81,7 @@ class InvalidTokenError(AppException):
         )
 
 
-class UnauthorizedError(AppException):
+class UnauthorizedError(AppError):
     def __init__(
         self,
         message: str = "Authentication required.",
@@ -89,7 +93,7 @@ class UnauthorizedError(AppException):
         )
 
 
-class RateLimitedError(AppException):
+class RateLimitedError(AppError):
     def __init__(
         self,
         message: str = "Too many attempts. Please try again later.",
@@ -101,7 +105,7 @@ class RateLimitedError(AppException):
         )
 
 
-class InternalError(AppException):
+class InternalError(AppError):
     def __init__(
         self,
         message: str = "An unexpected error occurred. Please try again.",

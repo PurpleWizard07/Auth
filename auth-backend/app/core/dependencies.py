@@ -42,10 +42,11 @@ async def get_current_user(
 
     try:
         payload = decode_access_token(token)
-        user_id: str | None = payload.get("sub")
-        if user_id is None:
+        user_id_str: str | None = payload.get("sub")
+        if user_id_str is None:
             raise credentials_exception
-    except JWTError:
+        user_id = int(user_id_str)
+    except (JWTError, ValueError):
         raise credentials_exception
 
     result = await db.get(User, user_id)
