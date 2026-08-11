@@ -1,4 +1,9 @@
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: '/api',
+  withCredentials: true,
+});
 
 export interface LoginRequest {
   email: string;
@@ -8,8 +13,11 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   accessToken: string;
-  tokenType: string;
-  user: UserResponse;
+  user: {
+    id: string;
+    fullName: string;
+    email: string;
+  };
 }
 
 export interface RegisterRequest {
@@ -17,13 +25,15 @@ export interface RegisterRequest {
   email: string;
   password: string;
   confirmPassword: string;
-  agreeToTerms: boolean;
 }
 
 export interface RegisterResponse {
   accessToken: string;
-  tokenType: string;
-  user: UserResponse;
+  user: {
+    id: string;
+    fullName: string;
+    email: string;
+  };
 }
 
 export interface ForgotPasswordRequest {
@@ -44,15 +54,6 @@ export interface ResetPasswordResponse {
   message: string;
 }
 
-export interface UserResponse {
-  id: string;
-  fullName: string;
-  email: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface MeResponse {
   id: string;
   fullName: string;
@@ -64,100 +65,40 @@ export interface MeResponse {
 
 export interface RefreshResponse {
   accessToken: string;
-  tokenType: string;
-}
-
-export interface LogoutResponse {
-  message: string;
-}
-
-export interface ApiError {
-  error: {
-    code: string;
-    message: string;
-    details?: Record<string, string[]>;
-  };
-}
-
-async function request<T>(path: string, options: RequestInit): Promise<T> {
-  const url = `${API_BASE_URL}${path}`;
-  const response = await fetch(url, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-  });
-
-  if (!response.ok) {
-    let errorBody: ApiError;
-    try {
-      errorBody = await response.json();
-    } catch {
-      throw new Error(`HTTP error ${response.status}`);
-    }
-    const err = new Error(errorBody.error?.message || `HTTP error ${response.status}`) as Error & { apiError: ApiError; status: number };
-    (err as any).apiError = errorBody;
-    (err as any).status = response.status;
-    throw err;
-  }
-
-  if (response.status === 204) {
-    return undefined as unknown as T;
-  }
-
-  return response.json() as Promise<T>;
 }
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
-  return request<LoginResponse>('/auth/login', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  const response = await api.post<LoginResponse>('/auth/login', data);
+  return response.data;
 }
 
 export async function register(data: RegisterRequest): Promise<RegisterResponse> {
-  return request<RegisterResponse>('/auth/register', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  const response = await api.post<RegisterResponse>('/auth/register', data);
+  return response.data;
 }
 
 export async function forgotPassword(data: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
-  return request<ForgotPasswordResponse>('/auth/forgot-password', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  const response = await api.post<ForgotPasswordResponse>('/auth/forgot-password', data);
+  return response.data;
 }
 
 export async function resetPassword(data: ResetPasswordRequest): Promise<ResetPasswordResponse> {
-  return request<ResetPasswordResponse>('/auth/reset-password', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  const response = await api.post<ResetPasswordResponse>('/auth/reset-password', data);
+  return response.data;
 }
 
-export async function me(accessToken: string): Promise<MeResponse> {
-  return request<MeResponse>('/auth/me', {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+export async function me(): Promise<MeResponse> {
+  const response = await api.get<MeResponse>('/auth/me');
+  return response.data;
 }
 
-export async function logout(accessToken: string): Promise<LogoutResponse> {
-  return request<LogoutResponse>('/auth/logout', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+export async function logout(): Promise<void> {
+  await api.post('/auth/logout');
 }
 
 export async function refresh(): Promise<RefreshResponse> {
-  return request<RefreshResponse>('/auth/refresh', {
-    method: 'POST',
-  });
+  const response = await api.post<RefreshResponse>('/auth/refresh');
+  return response.data;
 }
+
+export default api;
